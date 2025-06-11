@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = 'com.vypnito'
+version = ''
+description = 'A dynamic region management system.'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT'
+}
+
+// This directly sets the final output file name. This is a more robust method.
+shadowJar {
+    archiveFileName.set('1v1rooms.jar')
+}
+
+processResources {
+    def props = [
+            'version': project.version,
+            'name': 'Vyp1v1', // Internal name for plugin.yml
+            'main': 'com.vypnito.vyp1v1.Vyp1v1'
+    ]
+    inputs.properties props
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}

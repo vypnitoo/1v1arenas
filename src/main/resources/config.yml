@@ -1,0 +1,43 @@
+# Vyp1v1 Configuration File
+
+# Default settings that will be applied to newly created arenas.
+# You can edit the settings for each arena directly in their section below after creation.
+default-arena-settings:
+  # --- Game Rules ---
+  allow-block-break: false
+  allow-block-place: false
+  allow-item-drop: false
+  disable-hunger: true
+
+  # --- Wall Removal ---
+  # Delay in seconds before the glass wall is removed ONLY AFTER A PLAYER DIES.
+  # If a player leaves by walking out or disconnecting, the removal is instant (0 seconds).
+  wall-removal-delay-seconds: 30
+
+  # --- Effects ---
+  # List of effects to apply to players while they are inside the arena.
+  # Format is "EFFECT_TYPE:AMPLIFIER". Amplifier is 0 for level I, 1 for level II, etc.
+  # A full list of valid effect types can be found here:
+  # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/potion/PotionEffectType.html
+  effects:
+    - "SPEED:0"
+    - "JUMP:0"
+
+# --- Arenas will be saved below this line automatically by the /vyp create command ---
+arenas: {}
+
+# Example of a created arena (do not edit this example, it's just for reference):
+#
+# arenas:
+#   desert_arena:
+#     pos1:
+#       world: 'world'
+#       x: 100.0
+#       y: 64.0
+#       z: 200.0
+#       ...
+#     pos2:
+#       world: 'world'
+#       x: 120.0
+#       y: 70.0
+#

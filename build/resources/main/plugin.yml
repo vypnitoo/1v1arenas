@@ -1,0 +1,16 @@
+name: Vyp1v1
+main: com.vypnito.vyp1v1.Vyp1v1
+version: '2.0'
+api-version: '1.19'
+author: Vypnito
+description: A dynamic region management system.
+commands:
+  arena:
+    description: "Main command for the arena system."
+    usage: "/arena <subcommand>"
+    aliases: [ar]
+    permission: 1v1rooms.admin
+permissions:
+  1v1rooms.admin:
+    description: "Allows user to manage arenas."
+    default: op
