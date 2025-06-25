@@ -1,8 +1,1 @@
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
-
-rootProject.name = '1v1rooms'
+rootProject.name = '1v1Arena'

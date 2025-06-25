@@ -1,11 +1,10 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+        id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = 'com.vypnito'
-version = ''
-description = 'A dynamic region management system.'
+version = '1.2'
 
 repositories {
     mavenCentral()
@@ -13,19 +12,18 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:1.19.4-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT'
 }
 
-// This directly sets the final output file name. This is a more robust method.
 shadowJar {
-    archiveFileName.set('1v1rooms.jar')
+    archiveFileName.set('1v1Arena.jar')
 }
 
 processResources {
     def props = [
             'version': project.version,
-            'name': 'Vyp1v1', // Internal name for plugin.yml
-            'main': 'com.vypnito.vyp1v1.Vyp1v1'
+            'name': '1v1Arena',
+            'main': 'com.vypnito.arena.arena'
     ]
     inputs.properties props
     filesMatching('plugin.yml') {
@@ -34,5 +32,5 @@ processResources {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
 }

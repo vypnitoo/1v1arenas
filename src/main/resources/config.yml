@@ -1,43 +1,68 @@
-# Vyp1v1 Configuration File
+# SmartArenas Configuration File
+# This file manages global settings and defines all your arenas.
 
-# Default settings that will be applied to newly created arenas.
-# You can edit the settings for each arena directly in their section below after creation.
 default-arena-settings:
-  # --- Game Rules ---
+  # The material used for the arena's boundary walls (e.g., GLASS, BEDROCK).
+  # Use exact Minecraft material names (e.g., OAK_PLANKS, STONE, BARRIER).
+  wall-material: "GLASS"
+  # Set to true to allow players to break blocks inside the arena.
   allow-block-break: false
+  # Set to true to allow players to place blocks inside the arena.
   allow-block-place: false
+  # Set to true to allow players to drop items inside the arena.
   allow-item-drop: false
+  # Set to true to disable hunger depletion for players inside the arena.
   disable-hunger: true
-
-  # --- Wall Removal ---
-  # Delay in seconds before the glass wall is removed ONLY AFTER A PLAYER DIES.
-  # If a player leaves by walking out or disconnecting, the removal is instant (0 seconds).
+  # The delay in seconds for the arena walls to disappear after a player dies.
+  # This acts as a cooldown before the arena becomes open again.
   wall-removal-delay-seconds: 30
+  # List of potion effects applied to players when they enter the arena.
+  # Format: "EFFECT_NAME:AMPLIFIER" (e.g., "SPEED:1" for Speed II, "JUMP_BOOST:2" for Jump Boost III).
+  # Amplifier is 0-indexed (0 for level I, 1 for level II, etc.).
+  effects: []
 
-  # --- Effects ---
-  # List of effects to apply to players while they are inside the arena.
-  # Format is "EFFECT_TYPE:AMPLIFIER". Amplifier is 0 for level I, 1 for level II, etc.
-  # A full list of valid effect types can be found here:
-  # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/potion/PotionEffectType.html
-  effects:
-    - "SPEED:0"
-    - "JUMP:0"
+# Arena-specific settings for defining which blocks can be replaced by walls.
+arena-settings:
+  # A list of materials that are considered "replaceable" when an arena wall is built.
+  # Only blocks with these materials will be replaced by the arena wall.
+  # Solid blocks (like STONE, DIRT, WOOD) should NOT be in this list to prevent griefing.
+  # These blocks will be stored and restored to their original state when the wall disappears.
+  replaceable-materials:
+    - AIR
+    - CAVE_AIR
+    - VOID_AIR
+    - WATER
+    - LAVA
+    - TALL_GRASS
+    - SEAGRASS
+    - VINE
+    - TORCH
+    - WALL_TORCH
+    - REDSTONE_WIRE
+    - FIRE
+    - SNOW # Snow layers
+    - COBWEB
+    - SUGAR_CANE
+    - WHEAT
+    - CARROTS
+    - POTATOES
+    - BEETROOTS
+    - NETHER_WART
+    - LADDER
+    - LEVER
+    - STONE_BUTTON
+    - WOODEN_BUTTON
+    - BROWN_MUSHROOM
+    - RED_MUSHROOM
+    - DEAD_BUSH
+    - FERN
+    - LARGE_FERN
+    - FLOWER_POT
+    - OAK_SAPLING
+    - DANDELION
+    - POPPY
+    # Add any other transparent/passable blocks you deem safe to replace.
 
-# --- Arenas will be saved below this line automatically by the /vyp create command ---
+# Defines all custom arenas. Do not modify manually unless you know what you are doing.
+# Use plugin commands to manage arenas (e.g., /arena create, /arena delete).
 arenas: {}
-
-# Example of a created arena (do not edit this example, it's just for reference):
-#
-# arenas:
-#   desert_arena:
-#     pos1:
-#       world: 'world'
-#       x: 100.0
-#       y: 64.0
-#       z: 200.0
-#       ...
-#     pos2:
-#       world: 'world'
-#       x: 120.0
-#       y: 70.0
-#

@@ -1,9 +1,9 @@
-name: Vyp1v1
-main: com.vypnito.vyp1v1.Vyp1v1
-version: '2.0'
-api-version: '1.19'
+name: 1v1Arena
+main: com.vypnito.arena.arena
+version: 1.2
+api-version: '1.21'
 author: Vypnito
-description: A dynamic region management system.
+description: A dynamic region management system with a GUI editor.
 commands:
   arena:
     description: "Main command for the arena system."
