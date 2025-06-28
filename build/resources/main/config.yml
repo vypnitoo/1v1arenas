@@ -20,6 +20,8 @@ default-arena-settings:
   # Format: "EFFECT_NAME:AMPLIFIER" (e.g., "SPEED:1" for Speed II, "JUMP_BOOST:2" for Jump Boost III).
   # Amplifier is 0-indexed (0 for level I, 1 for level II, etc.).
   effects: []
+  # NEW: The number of players required to activate this arena (e.g., 2 for 1v1, 4 for 2v2).
+  required-players: 2
 
 # Arena-specific settings for defining which blocks can be replaced by walls.
 arena-settings:

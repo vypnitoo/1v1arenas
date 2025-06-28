@@ -1,37 +1,84 @@
 package com.vypnito.arena;
 
 import com.vypnito.arena.arenas.ArenaManager;
-import com.vypnito.arena.arenas.WandListener;
+// Import pro ArenaCommand a ArenaTabCompleter je již správný
+import com.vypnito.arena.ArenaCommand;
+import com.vypnito.arena.ArenaTabCompleter;
+import com.vypnito.arena.gui.GUIManager;
+import com.vypnito.arena.player.PlayerManager;
+import com.vypnito.arena.player.PlayerChatListener;
+import com.vypnito.arena.player.SelectionManager;
 import com.vypnito.arena.game.GameListener;
 import com.vypnito.arena.game.GameManager;
-import com.vypnito.arena.gui.GUIManager;
-import com.vypnito.arena.player.PlayerChatListener;
-import com.vypnito.arena.player.PlayerManager;
-import com.vypnito.arena.player.SelectionManager;
+// Nový import pro WandListener
+import com.vypnito.arena.player.WandListener;
+
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Bukkit;
 
-import java.io.File;
-
+/**
+ * Main class of the SmartArenas plugin.
+ * This class handles plugin enabling/disabling, manager initialization,
+ * and event/command registration.
+ */
 public final class arena extends JavaPlugin {
+
+	private ArenaManager arenaManager;
+	private SelectionManager selectionManager;
+	private PlayerManager playerManager;
+	private GUIManager guiManager;
+	private GameManager gameManager;
 
 	@Override
 	public void onEnable() {
-		saveDefaultConfig();
+		this.saveDefaultConfig();
+		this.reloadConfig();
 
-		PlayerManager playerManager = new PlayerManager();
-		SelectionManager selectionManager = new SelectionManager();
-		ArenaManager arenaManager = new ArenaManager(this);
-		GameManager gameManager = new GameManager(this, arenaManager);
-		GUIManager guiManager = new GUIManager(this, selectionManager, arenaManager, playerManager);
+		arenaManager = new ArenaManager(this);
+		// --- ZMĚNA ZDE: SelectionManager nyní potřebuje instanci pluginu pro NamespacedKey ---
+		selectionManager = new SelectionManager(this);
+		// --- KONEC ZMĚNY ---
+		playerManager = new PlayerManager();
+		guiManager = new GUIManager(this, selectionManager, arenaManager, playerManager);
+		gameManager = new GameManager(this, arenaManager);
 
-		this.getCommand("arena").setExecutor(new ArenaCommand(arenaManager, selectionManager, guiManager));
+		// Registrace event listenerů
+		Bukkit.getPluginManager().registerEvents(guiManager, this);
+		Bukkit.getPluginManager().registerEvents(new PlayerChatListener(this, playerManager, arenaManager, guiManager), this);
+		Bukkit.getPluginManager().registerEvents(new GameListener(gameManager), this);
+		// --- NOVÁ REGISTRACE: Registrace WandListeneru ---
+		Bukkit.getPluginManager().registerEvents(new WandListener(selectionManager), this);
+		// --- KONEC NOVÉ REGISTRACE ---
+
+		// Registrace příkazu
+		this.getCommand("arena").setExecutor(new ArenaCommand(this, arenaManager, selectionManager, guiManager));
 		this.getCommand("arena").setTabCompleter(new ArenaTabCompleter(arenaManager));
 
-		getServer().getPluginManager().registerEvents(new WandListener(selectionManager, playerManager, arenaManager, guiManager), this);
-		getServer().getPluginManager().registerEvents(new GameListener(gameManager), this);
-		getServer().getPluginManager().registerEvents(guiManager, this);
-		getServer().getPluginManager().registerEvents(new PlayerChatListener(this, playerManager, arenaManager, guiManager), this);
+		getLogger().info("SmartArenas has been enabled!");
+	}
 
-		getLogger().info("1v1Arena has been enabled!");
+	@Override
+	public void onDisable() {
+		getLogger().info("SmartArenas has been disabled!");
+	}
+
+	public ArenaManager getArenaManager() {
+		return arenaManager;
+	}
+
+	public SelectionManager getSelectionManager() {
+		return selectionManager;
+	}
+
+	public PlayerManager getPlayerManager() {
+		return playerManager;
+	}
+
+	public GUIManager getGuiManager() {
+		return guiManager;
+	}
+
+	public GameManager getGameManager() {
+		return gameManager;
 	}
 }

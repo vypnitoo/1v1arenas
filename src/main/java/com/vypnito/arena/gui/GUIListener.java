@@ -85,11 +85,17 @@ public class GUIListener implements Listener {
 			case EMERALD_BLOCK -> { // "Create Arena" button
 				Location pos1 = selectionManager.getPos1(player);
 				Location pos2 = selectionManager.getPos2(player);
+				// Note: This GUIListener's SetupGUI.open doesn't pass requiredPlayers.
+				// If you are using GUIManager's openSetupGUI for actual arena creation flow,
+				// this part might need adjustment or is only for display.
+				// For consistency with GameManager, a default of 2 players will be used if not specified.
+				int requiredPlayers = 2; // Default if not passed through GUI flow
+
 				if (pos1 != null && pos2 != null) {
-					arenaManager.createArena(arenaName, pos1, pos2); // Create the arena
-					selectionManager.clearSelection(player); // Clear player's selection
+					arenaManager.createArena(arenaName, pos1, pos2, requiredPlayers); // Passing default requiredPlayers
+					selectionManager.clearSelection(player);
 					player.sendMessage(Component.text("Arena '" + arenaName + "' created! Use '/arena edit " + arenaName + "' to configure.", NamedTextColor.AQUA));
-					player.closeInventory(); // Close the GUI
+					player.closeInventory();
 				} else {
 					player.sendMessage(Component.text("You must set both positions with the wand first.", NamedTextColor.RED));
 				}
@@ -113,13 +119,13 @@ public class GUIListener implements Listener {
 		int clickedSlot = event.getSlot();
 
 		switch (clicked) {
-			case REDSTONE_TORCH -> { // Set Position 1 or 2
+			case REDSTONE_TORCH -> {
 				PlayerState.SelectionType type = clickedSlot == 10 ? PlayerState.SelectionType.POS1 : PlayerState.SelectionType.POS2;
 				playerManager.setPlayerState(player, new PlayerState(arena, type));
 				player.closeInventory();
 				player.sendMessage(Component.text("Click a block to set " + type.name() + ". Type 'cancel' to abort.", NamedTextColor.YELLOW));
 			}
-			case LIME_DYE, GRAY_DYE -> { // Toggle options
+			case LIME_DYE, GRAY_DYE -> {
 				switch(clickedSlot) {
 					case 19 -> arena.getSettings().setAllowBlockBreak(!arena.getSettings().isAllowBlockBreak());
 					case 20 -> arena.getSettings().setAllowBlockPlace(!arena.getSettings().isAllowBlockPlace());
@@ -129,19 +135,18 @@ public class GUIListener implements Listener {
 				arenaManager.saveArena(arena);
 				editGUI.open(player, arena);
 			}
-			case DIAMOND_BLOCK -> { // Set Wall Material
+			case DIAMOND_BLOCK -> {
 				playerManager.setPlayerState(player, new PlayerState(arena, PlayerState.InputType.WALL_MATERIAL));
 				player.closeInventory();
 				player.sendMessage(Component.text("Type the new wall material name in chat.", NamedTextColor.YELLOW));
 			}
-			case CLOCK -> { // Set Death Delay
+			case CLOCK -> {
 				playerManager.setPlayerState(player, new PlayerState(arena, PlayerState.InputType.DELAY));
 				player.closeInventory();
 				player.sendMessage(Component.text("Type the new delay (in seconds) in chat.", NamedTextColor.YELLOW));
 			}
 			case POTION -> effectsGUI.open(player, arena, 0);
 
-			// Handle the "Close Arena Editor" button (slot 49)
 			case BARRIER -> {
 				if (clickedSlot == 49) {
 					playerManager.clearPlayerState(player);
@@ -158,7 +163,7 @@ public class GUIListener implements Listener {
 	 * @param title The GUI title.
 	 */
 	private void handleEffectsGUIClick(InventoryClickEvent event, String title) {
-		event.setCancelled(true); // Cancel the event
+		event.setCancelled(true);
 		Player player = (Player) event.getWhoClicked();
 		String arenaName = title.substring(EffectsGUI.GUI_TITLE_PREFIX.length()).split(" \\(Page")[0];
 		Arenas arena = arenaManager.getArena(arenaName);
@@ -168,15 +173,15 @@ public class GUIListener implements Listener {
 		int currentPage = Integer.parseInt(title.replaceAll("[^0-9]", "")) - 1;
 
 		switch (clickedItem.getType()) {
-			case ARROW -> { // Navigation arrows (Previous/Next Page)
+			case ARROW -> {
 				if (PlainTextComponentSerializer.plainText().serialize(clickedItem.displayName()).contains("Next")) { effectsGUI.open(player, arena, currentPage + 1); }
 				else { effectsGUI.open(player, arena, currentPage - 1); }
 			}
-			case BARRIER -> editGUI.open(player, arena); // Back to Main Editor
-			case POTION -> { // Potion effect item
-				// Tato část se spoléhá na to, že createEffectItem v EffectsGUI.java nebo GUIManager.java
-				// ukládá NamespacedKey do Persistent Data Container.
-				// Pokud ne, bude se parsovat název itemu, což je méně spolehlivé.
+			case BARRIER -> editGUI.open(player, arena);
+			case POTION -> {
+				// This part relies on createEffectItem in EffectsGUI.java or GUIManager.java
+				// storing NamespacedKey in Persistent Data Container.
+				// If not, it will parse the item name, which is less reliable.
 				String effectName = PlainTextComponentSerializer.plainText().serialize(clickedItem.displayName()).toUpperCase().replace(" ", "_").replace("§A", "").replace("§7", "");
 				PotionEffectType type = PotionEffectType.getByName(effectName);
 				if (type == null) return;

@@ -1,95 +1,115 @@
-package com.vypnito.arena;
+package com.vypnito.arena; // Změněno na com.vypnito.arena
 
-import com.vypnito.arena.arenas.Arenas;
 import com.vypnito.arena.arenas.ArenaManager;
+import com.vypnito.arena.arenas.Arenas;
 import com.vypnito.arena.gui.GUIManager;
-import com.vypnito.arena.player.PlayerManager;
 import com.vypnito.arena.player.SelectionManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-public class ArenaCommand implements CommandExecutor {
-	private final ArenaManager arenaManager;
-	private final SelectionManager selectionManager;
-	private final GUIManager guiManager;
+/**
+ * Zpracovává hlavní příkaz /arena a jeho subpříkazy.
+ * Tato třída implementuje pouze CommandExecutor, obsluha tab completion je v ArenaTabCompleter.
+ */
+public class ArenaCommand implements CommandExecutor { // Již neimplementuje TabCompleter
 
-	public ArenaCommand(ArenaManager arenaManager, SelectionManager selectionManager, GUIManager guiManager) {
+	private final arena plugin; // Reference na hlavní instanci pluginu
+	private final ArenaManager arenaManager; // Správce arén
+	private final SelectionManager selectionManager; // Správce výběrů
+	private final GUIManager guiManager; // Správce GUI
+
+	/**
+	 * Konstruktor pro ArenaCommand.
+	 * @param plugin Hlavní instance pluginu.
+	 * @param arenaManager Správce dat arén.
+	 * @param selectionManager Správce výběrů hráče (hůlka).
+	 * @param guiManager Správce všech interakcí s GUI.
+	 */
+	public ArenaCommand(arena plugin, ArenaManager arenaManager, SelectionManager selectionManager, GUIManager guiManager) {
+		this.plugin = plugin;
 		this.arenaManager = arenaManager;
 		this.selectionManager = selectionManager;
 		this.guiManager = guiManager;
 	}
 
+	/**
+	 * Vykonává příkaz /arena.
+	 * @param sender Odesílatel příkazu.
+	 * @param command Objekt příkazu.
+	 * @param label Alias použitý pro příkaz.
+	 * @param args Argumenty příkazu.
+	 * @return True, pokud byl příkaz úspěšně zpracován, jinak false.
+	 */
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		// Ujistíme se, že příkaz může používat pouze hráč pro interakce s GUI a hůlkou.
 		if (!(sender instanceof Player player)) {
-			sender.sendMessage(Component.text("This command is for players only.", NamedTextColor.RED));
+			sender.sendMessage(Component.text("Only players can use this command.", NamedTextColor.RED));
 			return true;
 		}
-		if (!player.hasPermission("1v1rooms.admin")) {
-			player.sendMessage(Component.text("You don't have permission.", NamedTextColor.RED));
+
+		// Kontrola potřebných oprávnění.
+		if (!player.hasPermission("smartarenas.admin")) {
+			player.sendMessage(Component.text("You don't have permission to use this command.", NamedTextColor.RED));
 			return true;
 		}
+
+		// Zobrazení základního použití, pokud nejsou poskytnuty žádné argumenty.
 		if (args.length == 0) {
-			sendHelp(player);
+			player.sendMessage(Component.text("Usage: /arena <wand|create|delete|reload|edit>", NamedTextColor.YELLOW));
 			return true;
 		}
-		String subCommand = args[0].toLowerCase();
-		if (args.length == 1) {
-			if ("wand".equals(subCommand)) {
+
+		// Zpracování subpříkazů.
+		switch (args[0].toLowerCase()) {
+			case "wand":
 				selectionManager.giveWand(player);
-				return true;
-			}
-			if ("reload".equals(subCommand)) {
-				arenaManager.loadArenas();
-				player.sendMessage(Component.text("Configuration and arenas reloaded.", NamedTextColor.GREEN));
-				return true;
-			}
-		}
-		if (args.length < 2) {
-			sendHelp(player);
-			return true;
-		}
-		String arenaName = args[1];
-		switch (subCommand) {
-			case "create" -> {
-				Location pos1 = selectionManager.getPos1(player);
-				Location pos2 = selectionManager.getPos2(player);
-				if (pos1 == null || pos2 == null) {
-					player.sendMessage(Component.text("You must set Pos1 and Pos2 with the wand first.", NamedTextColor.RED));
+				break;
+			case "create":
+				// Vyžaduje název arény pro vytvoření.
+				if (args.length < 2) {
+					player.sendMessage(Component.text("Usage: /arena create <name>", NamedTextColor.YELLOW));
 					return true;
 				}
-				arenaManager.createArena(arenaName, pos1, pos2);
-				selectionManager.clearSelection(player);
-				player.sendMessage(Component.text("Arena '" + arenaName + "' created! Use '/arena edit " + arenaName + "' to configure.", NamedTextColor.AQUA));
-			}
-			case "delete" -> {
-				arenaManager.deleteArena(arenaName);
-				player.sendMessage(Component.text("Arena '" + arenaName + "' has been deleted.", NamedTextColor.GREEN));
-			}
-			case "edit" -> {
-				Arenas arena = arenaManager.getArena(arenaName);
-				if (arena == null) {
-					player.sendMessage(Component.text("Arena '" + arenaName + "' not found.", NamedTextColor.RED));
+				String arenaName = args[1];
+				// Otevře GUI pro výběr typu arény (1v1, 2v2, atd.).
+				guiManager.openArenaTypeSelectionGUI(player, arenaName);
+				break;
+			case "delete":
+				// Vyžaduje název arény pro smazání.
+				if (args.length < 2) {
+					player.sendMessage(Component.text("Usage: /arena delete <name>", NamedTextColor.YELLOW));
 					return true;
 				}
-				guiManager.openEditGUI(player, arena);
-			}
-			default -> sendHelp(player);
+				arenaManager.deleteArena(args[1]);
+				break;
+			case "reload":
+				// Znovu načte konfiguraci pluginu (implementace v hlavní třídě pluginu).
+				plugin.reloadConfig(); // Tímto se znovu načte hlavní konfigurace pluginu
+				arenaManager.loadReplaceableMaterials(); // A znovu se načtou vlastní materiály
+				player.sendMessage(Component.text("SmartArenas configuration reloaded.", NamedTextColor.GREEN));
+				break;
+			case "edit":
+				// Vyžaduje název arény pro úpravu.
+				if (args.length < 2) {
+					player.sendMessage(Component.text("Usage: /arena edit <name>", NamedTextColor.YELLOW));
+					return true;
+				}
+				Arenas arenaToEdit = arenaManager.getArena(args[1]);
+				if (arenaToEdit == null) {
+					player.sendMessage(Component.text("Arena '" + args[1] + "' not found.", NamedTextColor.RED));
+					return true;
+				}
+				guiManager.openEditGUI(player, arenaToEdit);
+				break;
+			default:
+				player.sendMessage(Component.text("Unknown subcommand. Usage: /arena <wand|create|delete|reload|edit>", NamedTextColor.YELLOW));
+				break;
 		}
 		return true;
-	}
-
-	private void sendHelp(Player player) {
-		player.sendMessage(Component.text("--- Arena Admin Help ---", NamedTextColor.GOLD));
-		player.sendMessage(Component.text("/arena wand", NamedTextColor.YELLOW).append(Component.text(" - Get the selection wand.", NamedTextColor.GRAY)));
-		player.sendMessage(Component.text("/arena create <name>", NamedTextColor.YELLOW).append(Component.text(" - Create an arena.", NamedTextColor.GRAY)));
-		player.sendMessage(Component.text("/arena edit <name>", NamedTextColor.YELLOW).append(Component.text(" - Open the GUI editor for an arena.", NamedTextColor.GRAY)));
-		player.sendMessage(Component.text("/arena delete <name>", NamedTextColor.YELLOW).append(Component.text(" - Delete an arena.", NamedTextColor.GRAY)));
-		player.sendMessage(Component.text("/arena reload", NamedTextColor.YELLOW).append(Component.text(" - Reload the config.", NamedTextColor.GRAY)));
 	}
 }

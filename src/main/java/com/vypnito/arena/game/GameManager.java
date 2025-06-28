@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class GameManager {
 	private final arena plugin;
 	private final ArenaManager arenaManager;
-	private final Map<UUID, PlayerEffectSnapshot> savedPlayerEffects = new HashMap<>(); // Ukládá efekty hráčů při vstupu do arény
+	private final Map<UUID, PlayerEffectSnapshot> savedPlayerEffects = new HashMap<>(); // Stores player effects upon entering an arena
 
 	// Record for saving a player's effect state
 	private record PlayerEffectSnapshot(long timestamp, Collection<PotionEffect> effects) {}
@@ -58,7 +58,7 @@ public class GameManager {
 		Collection<PotionEffect> currentEffects = new ArrayList<>(player.getActivePotionEffects());
 		savedPlayerEffects.put(player.getUniqueId(), new PlayerEffectSnapshot(System.currentTimeMillis(), currentEffects));
 		applyArenaEffects(player, arena);
-		checkWallCreation(arena); // Check if the wall should be created (if 2+ players are present)
+		checkWallCreation(arena); // Check if the wall should be created (if enough players are present)
 	}
 
 	/**
@@ -68,9 +68,9 @@ public class GameManager {
 	 * @param arena The arena the player left.
 	 */
 	public void onPlayerLeaveArena(Player player, Arenas arena) {
-		restoreOriginalEffects(player); // Obnoví efekty hráče
-		// If there are less than 2 players in the arena, instantly remove the wall
-		if (arena.getPlayers().size() < 2) {
+		restoreOriginalEffects(player); // Restore player's effects
+		// If player count drops below required players, instantly remove the wall
+		if (arena.getPlayers().size() < arena.getSettings().getRequiredPlayers()) { // NEW: Use requiredPlayers
 			removeWallInstantly(arena);
 		}
 	}
@@ -82,9 +82,9 @@ public class GameManager {
 	 * @param arena The arena where the player died.
 	 */
 	public void onPlayerDieInArena(Player player, Arenas arena) {
-		restoreOriginalEffects(player); // Obnoví efekty hráče
-		// If there are less than 2 players in the arena, send a message and schedule delayed wall removal
-		if (arena.getPlayers().size() < 2) {
+		restoreOriginalEffects(player); // Restore player's effects
+		// If player count drops below required players, send a message and schedule delayed wall removal
+		if (arena.getPlayers().size() < arena.getSettings().getRequiredPlayers()) { // NEW: Use requiredPlayers
 			sendDelayedWallMessage(player, arena);
 			removeWallWithDelay(arena);
 		}
@@ -92,13 +92,13 @@ public class GameManager {
 
 	/**
 	 * Checks if the arena wall should be created.
-	 * The wall is created if there are at least 2 players in the arena and the wall is not already active.
+	 * The wall is created if there are enough players in the arena and the wall is not already active.
 	 * @param arena The arena to check.
 	 */
 	public void checkWallCreation(Arenas arena) {
 		if (arena == null) return;
-		// Wall is created ONLY if there are 2 or more players AND it's not already active.
-		if (arena.getPlayers().size() >= 2 && !arena.isWallActive()) {
+		// Wall is created ONLY if there are enough players AND it's not already active.
+		if (arena.getPlayers().size() >= arena.getSettings().getRequiredPlayers() && !arena.isWallActive()) { // NEW: Use requiredPlayers
 			arena.createBoundaryWall(); // Create the arena wall
 			arena.getPlayers().forEach(uuid -> { // Notify all players in the arena
 				Player p = Bukkit.getPlayer(uuid);
@@ -128,8 +128,8 @@ public class GameManager {
 			new BukkitRunnable() {
 				@Override
 				public void run() {
-					// Check if there are still less than 2 players in the arena before removing the wall
-					if (arena.getPlayers().size() < 2) {
+					// Check if there are still less than required players in the arena before removing the wall
+					if (arena.getPlayers().size() < arena.getSettings().getRequiredPlayers()) { // NEW: Use requiredPlayers
 						arena.removeBoundaryWall();
 						arena.getPlayers().forEach(uuid -> { // Notify remaining players
 							Player p = Bukkit.getPlayer(uuid);

@@ -7,34 +7,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Nastavení pro jednotlivou arénu (materiál stěn, povolené akce, efekty atd.).
+ * Settings for an individual arena (wall material, allowed actions, effects, etc.).
  */
 public class ArenaSettings {
-	private Material wallMaterial = Material.GLASS; // Výchozí materiál
+	private Material wallMaterial = Material.GLASS; // Default wall material
 	private boolean allowBlockBreak = false;
 	private boolean allowBlockPlace = false;
 	private boolean allowItemDrop = false;
 	private boolean disableHunger = true;
 	private int wallRemovalDelay = 30;
-	private List<String> effects = new ArrayList<>(); // Ukládáme jako String pro snadné ukládání/načítání
+	private List<String> effects = new ArrayList<>(); // Stored as String for easy saving/loading
+	private int requiredPlayers = 2; // NEW: Default to 2 players for 1v1
 
-	// --- KLÍČOVÁ ZMĚNA: Veřejný konstruktor bez argumentů ---
 	public ArenaSettings() {
-		// Zde se inicializují výchozí hodnoty, pokud je potřeba.
-		// Všechny privátní proměnné jsou již inicializovány nahoře.
+		// Default constructor
 	}
-	// --- KONEC KLÍČOVÉ ZMĚNY ---
-
-	// Pokud jsi měl dříve jiný konstruktor, například s ConfigurationSection,
-	// ten by zůstal jako přetížení konstruktoru:
-    /*
-    public ArenaSettings(ConfigurationSection section) {
-        this(); // Volá výchozí konstruktor pro inicializaci
-        // Zde bys načítal nastavení ze section
-        this.wallMaterial = Material.valueOf(section.getString("wall-material", "GLASS"));
-        // ... a tak dále pro všechny ostatní proměnné
-    }
-    */
 
 	public Material getWallMaterial() { return wallMaterial; }
 	public void setWallMaterial(Material wallMaterial) { this.wallMaterial = wallMaterial; }
@@ -56,14 +43,11 @@ public class ArenaSettings {
 
 	public List<String> getEffects() { return effects; }
 	public void addEffect(String effectString) {
-		// Kontrola duplicity, aby se stejný efekt nepřidal vícekrát
-		// Porovnávám jen typ efektu, ne celou string reprezentaci s amplifierem
 		String newEffectType = effectString.split(":")[0];
 		boolean alreadyHas = effects.stream().anyMatch(e -> e.startsWith(newEffectType + ":"));
 		if (!alreadyHas) {
 			effects.add(effectString);
 		} else {
-			// Pokud už efekt existuje, aktualizovat ho namísto přidávání duplikátu
 			effects = effects.stream()
 					.map(e -> e.startsWith(newEffectType + ":") ? effectString : e)
 					.collect(Collectors.toList());
@@ -76,4 +60,7 @@ public class ArenaSettings {
 		return effects.stream().anyMatch(s -> s.startsWith(type.getName() + ":"));
 	}
 
+	// NEW: Getter and Setter for requiredPlayers
+	public int getRequiredPlayers() { return requiredPlayers; }
+	public void setRequiredPlayers(int requiredPlayers) { this.requiredPlayers = requiredPlayers; }
 }

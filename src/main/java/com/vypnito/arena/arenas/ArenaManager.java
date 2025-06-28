@@ -18,45 +18,28 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-/**
- * Třída ArenaManager spravuje všechny arény pluginu. Zahrnuje funkcionalitu
- * pro načítání, ukládání, vytváření a získávání arén.
- */
 public class ArenaManager {
 
-	private final arena plugin;
-	private final Map<String, Arenas> arenas = new HashMap<>();
-	private File arenasFile;
-	private FileConfiguration arenasConfig;
+	private final arena plugin; // Reference na hlavní instanci pluginu
+	private final Map<String, Arenas> arenas = new HashMap<>(); // Mapa pro uchovávání všech arén podle názvu
+	private File arenasFile; // Soubor pro ukládání dat arén
+	private FileConfiguration arenasConfig; // Konfigurace pro přístup k datům v souboru
 
-	// --- Nová statická proměnná pro nahraditelné materiály ---
 	private static Set<Material> replaceableWallMaterials = new HashSet<>();
-	// --- Konec nové proměnné ---
 
-	/**
-	 * Konstruktor ArenaManageru. Inicializuje správce souborů a načte existující arény.
-	 * @param plugin Hlavní instance tvého pluginu.
-	 */
 	public ArenaManager(arena plugin) {
 		this.plugin = plugin;
 		setupFiles();
 		loadArenas();
-		loadReplaceableMaterials(); // Voláme při spuštění, po načtení configu
+		loadReplaceableMaterials();
 	}
 
-	/**
-	 * Získá statickou sadu nahraditelných materiálů.
-	 * @return Set<Material> s materiály, které lze nahradit zdí.
-	 */
 	public static Set<Material> getReplaceableWallMaterials() {
 		return replaceableWallMaterials;
 	}
 
-	/**
-	 * Načte materiály, které lze nahradit zdí, z konfiguračního souboru.
-	 */
-	private void loadReplaceableMaterials() {
-		replaceableWallMaterials.clear(); // Vyčistíme staré materiály před načtením nových
+	public void loadReplaceableMaterials() {
+		replaceableWallMaterials.clear();
 		List<String> materialNames = plugin.getConfig().getStringList("arena-settings.replaceable-materials");
 		for (String name : materialNames) {
 			try {
@@ -69,9 +52,6 @@ public class ArenaManager {
 		plugin.getLogger().info("Loaded " + replaceableWallMaterials.size() + " replaceable wall materials.");
 	}
 
-	/**
-	 * Zajišťuje existenci složky s daty pluginu a souboru arenas.yml.
-	 */
 	private void setupFiles() {
 		if (!plugin.getDataFolder().exists()) {
 			plugin.getDataFolder().mkdir();
@@ -88,10 +68,7 @@ public class ArenaManager {
 		arenasConfig = YamlConfiguration.loadConfiguration(arenasFile);
 	}
 
-	/**
-	 * Načte všechny arény ze souboru arenas.yml do paměti.
-	 */
-	public void loadArenas() {
+	private void loadArenas() {
 		if (arenasConfig.contains("arenas")) {
 			ConfigurationSection arenasSection = arenasConfig.getConfigurationSection("arenas");
 			if (arenasSection != null) {
@@ -112,6 +89,8 @@ public class ArenaManager {
 							settings.setWallRemovalDelay(settingsSection.getInt("wall-removal-delay-seconds", 30));
 							settings.getEffects().clear();
 							settings.getEffects().addAll(settingsSection.getStringList("effects"));
+							// NEW: Load requiredPlayers
+							settings.setRequiredPlayers(settingsSection.getInt("required-players", 2));
 						}
 
 						Arenas arena = new Arenas(arenaName, pos1, pos2, settings);
@@ -125,10 +104,6 @@ public class ArenaManager {
 		}
 	}
 
-	/**
-	 * Uloží data jedné arény do souboru arenas.yml.
-	 * @param arena Aréna, která má být uložena nebo aktualizována.
-	 */
 	public void saveArena(Arenas arena) {
 		arenasConfig.set("arenas." + arena.getName() + ".pos1", arena.getPos1());
 		arenasConfig.set("arenas." + arena.getName() + ".pos2", arena.getPos2());
@@ -141,6 +116,8 @@ public class ArenaManager {
 		settingsSection.set("disable-hunger", arena.getSettings().isDisableHunger());
 		settingsSection.set("wall-removal-delay-seconds", arena.getSettings().getWallRemovalDelay());
 		settingsSection.set("effects", arena.getSettings().getEffects());
+		// NEW: Save requiredPlayers
+		settingsSection.set("required-players", arena.getSettings().getRequiredPlayers());
 
 		try {
 			arenasConfig.save(arenasFile);
@@ -151,39 +128,34 @@ public class ArenaManager {
 	}
 
 	/**
-	 * Vytvoří novou arénu s daným názvem a pozicami.
-	 * Automaticky uloží arénu. Zeď se staví až při vstupu hráčů.
-	 * @param name Název nové arény.
-	 * @param pos1 První vybraná pozice.
-	 * @param pos2 Druhá vybraná pozice.
+	 * Creates a new arena with the given name, positions, and specified required players.
+	 * Automatically saves the arena. Walls are built only when players enter.
+	 * @param name The name of the new arena.
+	 * @param pos1 The first selected position.
+	 * @param pos2 The second selected position.
+	 * @param requiredPlayers The number of players required to activate this arena.
 	 */
-	public void createArena(String name, Location pos1, Location pos2) {
+	public void createArena(String name, Location pos1, Location pos2, int requiredPlayers) { // NEW: added requiredPlayers
 		if (arenas.containsKey(name)) {
 			plugin.getLogger().warning("Cannot create arena: Arena '" + name + "' already exists!");
 			return;
 		}
 
 		ArenaSettings defaultSettings = new ArenaSettings();
+		// NEW: Set requiredPlayers in default settings
+		defaultSettings.setRequiredPlayers(requiredPlayers);
+
 		Arenas newArena = new Arenas(name, pos1, pos2, defaultSettings);
 		arenas.put(name, newArena);
 		saveArena(newArena);
 
-		plugin.getLogger().info("New arena '" + name + "' created.");
+		plugin.getLogger().info("New arena '" + name + "' created with " + requiredPlayers + " required players."); // Anglický text
 	}
 
-	/**
-	 * Získá instanci arény podle jejího názvu.
-	 * @param name Název arény, kterou hledáte.
-	 * @return Objekt Arenas, nebo null, pokud aréna s daným názvem neexistuje.
-	 */
 	public Arenas getArena(String name) {
 		return arenas.get(name);
 	}
 
-	/**
-	 * Odstraní arénu z paměti a z konfiguračního souboru.
-	 * @param name Název arény k odstranění.
-	 */
 	public void deleteArena(String name) {
 		if (arenas.containsKey(name)) {
 			arenas.remove(name);
@@ -199,19 +171,10 @@ public class ArenaManager {
 		}
 	}
 
-	/**
-	 * Vrací seznam názvů všech arén.
-	 * @return List Stringů obsahující názvy všech arén.
-	 */
 	public List<String> getArenaNames() {
 		return new ArrayList<>(arenas.keySet());
 	}
 
-	/**
-	 * Najde arénu, která obsahuje danou lokaci.
-	 * @param location Lokace, kterou chceme zkontrolovat.
-	 * @return Objekt Arenas, pokud je lokace uvnitř nějaké arény, jinak null.
-	 */
 	public Arenas findArenaByRegion(Location location) {
 		if (location.getWorld() == null) {
 			return null;
